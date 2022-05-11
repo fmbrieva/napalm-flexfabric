@@ -2,16 +2,39 @@
 
 import uuid
 import setuptools
+
+
+from setuptools import setup, find_packages
 try:
+    # pip>=21.x.x
+    from pip._internal.req.constructors import (
+        install_req_from_parsed_requirement,
+    )
+except ImportError:
+    # pip<=20.x.x
+    def install_req_from_parsed_requirement(x):
+        return x
+
+try:
+    # pip >=20
+    from pip._internal.network.session import PipSession
     from pip._internal.req import parse_requirements
 except ImportError:
-    from pip.req import parse_requirements
+    try:
+        # 10.0.0 <= pip <= 19.3.1
+        from pip._internal.download import PipSession
+        from pip._internal.req import parse_requirements
+    except ImportError:
+        # pip <= 9.0.3
+        from pip.download import PipSession
+        from pip.req import parse_requirements
 
 __author__ = 'Steffen Walter <steffen.walter@atos.net>'
 
 install_reqs = parse_requirements('requirements.txt', session=uuid.uuid1())
-reqs = [str(ir.req) for ir in install_reqs]
+install_reqs = [install_req_from_parsed_requirement(req) for req in install_reqs]
 
+reqs = [str(ir.req) for ir in install_reqs]
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
